@@ -1,4 +1,4 @@
-// ----------------------------------------------------------------------------
+﻿// ----------------------------------------------------------------------------
 // All right reserved
 // Copyright (C) 2012 Jay Salvat
 // http://jaysalvat.com/
@@ -16,22 +16,16 @@
 buzz.defaults.formats = [ 'ogg', 'mp3' ];
 buzz.defaults.preload = 'metadata';
 
+//'gorilla1|терминатор управления|собаа|учитель|попугай|водитель|врач|das Model'
+
 var games = [
-    { img: 'img/icecream.png', color:'#7FA917', word: 'buzz! demo', sound: 'sounds/truck' },
-    { img: 'img/elephant.png', color:'#BCC9CC', word: 'elephant', sound: 'sounds/elephant' },
-    { img: 'img/gorilla.png', color:'#FF0000', word: 'gorilla', sound: 'sounds/monkey' },
-    { img: 'img/lion.png', color:'#FFBE00', word: 'lion', sound: 'sounds/lion' }
+    { img: 'img/pony.png', color:'#D4FFD4', word: 'Горилла Первая|Терминатор управления|Собака|Учитель',
+        sound: 'sounds/monkey' }
 ];
 
 var winSound        = new buzz.sound('sounds/win' ),
-    errorSound      = new buzz.sound('sounds/error' ),
-    alphabetSounds  = {},
-    alphabet        = 'abcdefghijklmnopqrstuvwxyz'.split( '' );
+    errorSound      = new buzz.sound('sounds/error' );
 
-for( var i in alphabet ) {
-    var letter = alphabet[ i ];
-    alphabetSounds[ letter ] = new buzz.sound('sounds/kid/'+ letter );
-}
 
 $( function() {
     if ( !buzz.isSupported() ) {
@@ -48,32 +42,20 @@ $( function() {
         return false 
     });
 
-    $( '#next' ).click( function() {
+    $picture.click( function() {
         refreshGame();
         buildGame( ++idx ); 
-        return false;
-    });
-
-    $( '#previous' ).click( function() {
-       refreshGame();
-       buildGame( --idx ); 
-       return false;
-    });
-
-    $( '#level' ).click( function() {
-        if ( $( this ).text() == 'easy' ) {
-            $( this ).text( 'hard' );
-            $models.addClass( 'hard' );
-        } else {
-            $( this ).text( 'easy' );
-            $models.removeClass( 'hard' );
-        }
         return false;
     });
 
     function refreshGame() {
         $( '#models' ).html( '' );
         $( '#letters' ).html( '' );
+    }
+
+    function refreshPicture(img) {
+        // Update the picture
+        $picture.attr( 'src', img );
     }
 
     function buildGame( x ) {
@@ -94,40 +76,34 @@ $( function() {
         $( 'body' ).stop().animate({
             backgroundColor: game.color
         }, 1000);
-        $( '#header a' ).stop().animate({
+        $( '#header').find('a' ).stop().animate({
             color: game.color
         }, 1000);
 
-        // Update the picture
-        $picture.attr( 'src', game.img )
-            .unbind( 'click' )
-            .bind( 'click', function() {
-                gameSound.play();
-            });
+        refreshPicture(game.img);
+        $('#won').addClass( 'hidden' );
 
         // Build model
-        var modelLetters = game.word.split( '' );
+        var modelLetters = game.word.split( '|' );
 
-        for( var i in modelLetters ) {
-            var letter = modelLetters[ i ];
-            $models.append( '<li>' + letter + '</li>' );
-        }
-
-        var letterWidth = $models.find( 'li' ).outerWidth( true );
-
-        $models.width( letterWidth * $models.find( 'li' ).length );
+        modelLetters.forEach( function(elem,  i ) {
+            var j = i + 1;
+            $models.append( '<span id="' + elem + '" class="col-xs-12 col-sm-6 col-md-3 col-lg-3">' + j + '</span>' );
+        });
 
         // Build shuffled letters
-        var letters  = game.word.split( '' ),
+        var letters  = game.word.split( '|' ),
             shuffled = letters.sort( function() { return Math.random() < 0.5 ? -1 : 1 });
 
-        for( var i in shuffled ) {
-            $letters.append( '<li class="draggable">' + shuffled[ i ] + '</li>' );
-        }
+        shuffled.forEach(function(element) {
+            $letters.append('<span class="draggable col-xs-12 col-sm-6 col-md-3 col-lg-3">' + element + '</span>');
+        });
 
-        $letters.find( 'li' ).each( function( i ) {
-            var top   = ( $models.position().top ) + ( Math.random() * 100 ) + 80,
-                left  = ( $models.offset().left - $container.offset().left ) + ( Math.random() * 20 ) + ( i * letterWidth ),
+        var modelsSpans = $models.find( 'span' );
+
+        $letters.find( 'span' ).each( function( i ) {
+            var top   = 300 * Math.random() + 500,
+                left  =  $(modelsSpans[i]).offset().left -50 ,
                 angle = ( Math.random() * 30 ) - 10;
 
             $( this ).css({
@@ -136,34 +112,29 @@ $( function() {
             });
 
             rotate( this, angle );
-
-            $( this ).mousedown( function() {
-                var letter = $( this ).text();
-                if ( alphabetSounds[ letter ] ) {
-                    alphabetSounds[ letter ].play();
-                }
-            });
         });
 
-        $letters.find( 'li.draggable' ).draggable({
+        $letters.find( 'span.draggable' ).draggable({
             zIndex: 9999,
-            stack: '#letters li'
+            stack: '#letters span'
         });
 
-        $models.find( 'li' ).droppable( {
+        $models.find( 'span' ).droppable( {
             accept:     '.draggable',
             hoverClass: 'hover',
             drop: function( e, ui ) {
-                var modelLetter      = $( this ).text(),
+                var modelLetter      = this.id,
                     droppedLetter = ui.helper.text();
 
                 if ( modelLetter == droppedLetter ) {
                     ui.draggable.animate( {
                         top:     $( this ).position().top,
                         left:     $( this ).position().left
-                    } ).removeClass( 'draggable' ).draggable( 'option', 'disabled', true );
+                    } ).removeClass( 'draggable' ).draggable( 'option', 'disabled', true);
                     
                     rotate( ui.draggable, 0 );
+                    ui.draggable.text(this.innerText + '. ' + droppedLetter);
+                    refreshPicture('img/pony.png');
                     
                     score++;
                     
@@ -174,6 +145,7 @@ $( function() {
                     ui.draggable.draggable( 'option', 'revert', true );
                     
                     errorSound.play();
+                    refreshPicture('img/demon.png');
                     
                     setTimeout( function() {
                         ui.draggable.draggable( 'option', 'revert', false );
@@ -185,20 +157,8 @@ $( function() {
 
     function winGame() {
         winSound.play();
-
-        $( '#letters li' ).each( function( i ) {
-            var $$ = $( this );
-            setTimeout( function() {
-                $$.animate({
-                    top:'+=60px'
-                });
-            }, i * 300 );
-        });
-
-        setTimeout( function() {
-            refreshGame();
-            buildGame( ++idx );
-        }, 3000);
+        refreshPicture('img/chibi_demon.png');
+        $('#won').removeClass( 'hidden' );
     }
 
     function rotate( el, angle ) {
@@ -212,4 +172,5 @@ $( function() {
     }
 
     buildGame( idx );
+
 });
